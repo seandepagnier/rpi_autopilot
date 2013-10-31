@@ -12,16 +12,26 @@
 
 #include "servo.h"
 
-
 float servo_scale = -1000; /* physical configuration */
 float min_hardover_period = 2;
 
 float servo_command_hz = 10;
 
+static void config(int op)
+{
+    FILE *f = config_open(op, "servo");
+
+    // scale factor and polarity of servo configuration,
+    // servo is controlled by an avr which takes +- 1000
+    config_float(op, f, "servo_scale", &servo_scale);
+
+    config_float(op, f, "min_hardover_period", &min_hardover_period);
+
+    fclose(f);
+}
+
 int servo_open(const char *device)
 {
-
-
     /* configure serial port to drive motor */
     char cmd[256] = "";
     strcat(cmd, "stty -F ");
@@ -57,21 +67,40 @@ void servo_write(int servo, int command)
         scaled_command = -max_command + lsc;
     lsc = scaled_command;
 
-    sprintf(scommand, "%d\r\n", (int)(scaled_command));
-    write(servo, scommand, strlen(scommand));
+    FILE *s = fdopen(servo, "w");
+    fprintf(s, "c%d\r\n", (int)(scaled_command));
 }
 
 int servo_read(int servo)
 {
-    char buf[1];
+    char buf[10];
     while((read(servo, buf, 1)) == 1) {
         switch(buf[0]) {
+        case 'e': /* stall */
+        case 'o': /* overflow */
+        case 'i': /* invalid */
+        case 'f': /* out of range */
+        case 'n': /* not accepting commands */
+            printf("servo sent: %c\n", buf[0]);
+            break;
         case 'k': /* accepted command */
             break;
+        case 'P': /* hold button port */
+        case 'p': /* button port */
+        case 'S': /* hold button starboard */
+        case 's': /* button starboard */
+            break;
         case 'm': /* monitor reading */
+            break;
         default: /* unknown */
             break;
         }
     }
     return 0;
+}
+
+int servo_set_max_current(int servo, float current)
+{
+    FILE *s = fdopen(servo, "w");
+    fprintf(s, "s%d\r\n", (int)(current*10.0));
 }

@@ -1,11 +1,49 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#define _GNU_SOURCE
+#include <unistd.h>
+
 #include <stdint.h>
 #include <string.h>
 #include <math.h>
 
+#include <errno.h>
+
 #include "config.h"
+
+
+FILE *config_open(int op, const char *config_name)
+{
+    char *defpath;
+    asprintf(&defpath, "%s/.rpi_ap", getenv("HOME"));
+
+    char *path = get_current_dir_name();
+
+    FILE *f = NULL;
+    /* cd to config dir */
+    if(chdir(defpath) == -1) {
+        if(errno == ENOENT) {
+            mkdir(defpath, 0755);
+            if(chdir(defpath) == -1)
+                goto abort;
+        } else
+            goto abort;
+    }
+
+    
+    
+    if(!(f = fopen(config_name, op == READ ? "r" : "w")))
+        fprintf(stderr, "failed to open config: %s\n", config_name);
+
+    /* reset working directory */
+    chdir(path);
+    free(path);
+
+abort:
+    free(defpath);
+    return f;
+}
 
 /* persistant data, like calibration and configuration settings */
 int config_string(int op, FILE *f, const char *name, char *str, int maxlen)

@@ -1,15 +1,15 @@
 PROJECT(imu)
 SET(PACKAGE_NAME rpi_imu)
 
+INCLUDE_DIRECTORIES(../misc)
+
 SET(SRC
   calibration.c
-  config.c
   imu.c
   matrix.c
   quaternion.c
   rotate.c
   vector.c
-  config.c
   MadgwickAHRS/MadgwickAHRS.c
   MahonyAHRS/MahonyAHRS.c
 )

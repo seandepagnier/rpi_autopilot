@@ -24,7 +24,6 @@
   connected to io pins.
 */
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -40,17 +39,23 @@
 #include <string.h>
 
 #include "imu.h"
-#include "servo.h"
-
 #include "calibration.h"
 #include "rotate.h"
 #include "quaternion.h"
 #include "vector.h"
 
+#include "servo.h"
+
+#include "config.h"
+
+#define UPDATE_RATE 10 /* 10 hz */
+
 float desired_heading = 120;
+enum {PITCH, ROLL, YAW, PITCH_RATE, ROLL_RATE, YAW_RATE};
+enum {POSITION, INTEGRAL=6, DERIVATIVE=12};
 static float pid_gains[18] =
 // P   R   Y   P'  R'  Y'
-{  0,  0,  .1,  0,  0, .16,  // P
+{  0,  0, .1,  0,  0, .16,   // P
    0,  0,  0,  0,  0,  0,    // I
    0,  0,  0,  0,  0,  0};   // D
 
@@ -59,10 +64,7 @@ int engauged = 0;
 static float states[18];
 float command;
 
-void print_value(float v)
-{
-    printf("%c%05.2f ", v < 0 ? '-' : '+', fabs(v));
-}
+float heel; /* average roll over a longer period */
 
 float pid_command()
 {
@@ -78,56 +80,45 @@ float pid_command()
     return total;
 }
 
-int yaw_dampening = 0;
-void yaw_dampen(int ind)
+int sensorlogpos, sensorlogready;
+float sensorlog[10*UPDATE_RATE][6]; /* 10 second memory */
+#define sensorlogsize (sizeof sensorlog) / (sizeof *sensorlog)
+
+void analyze_state(float state[6])
 {
-    #define logsize 100
-    static float log[SENSOR_COUNT][logsize];
-    static int logstart[SENSOR_COUNT], logend[SENSOR_COUNT];
-    log[ind][logstart[ind]--] = states[ind];
-    if(logstart[ind] < 0)
-        logstart[ind] = logsize-1;
-    if(logstart[ind] == logend[ind])
-        logend[ind]--;
-    if(logend[ind] < 0)
-        logend[ind] = logsize-1;
-
-//    printf("%d %d:", logstart[ind], logend[ind]);
-    int i, c=0;
-    float curlog[logsize];
-
-//    for(i=0; i<logsize; i++)
-//        print_value(log[ind][i]);
-//    printf("\n");
-
-    for(i = logstart[ind]; i!= logend[ind]; i++) {
-        if(i == logsize)
-            i = -1;
-        else {
-            curlog[c] = log[ind][i];
-            c++;
-        }
+    memcpy(sensorlog[sensorlogpos++], state, sizeof state);
+    if(sensorlogpos == sensorlogsize) {
+        sensorlogpos = 0;
+        sensorlogready = 1;
     }
 
-#if 1
-    float X[4], r;
-    r = CalcBestLine(curlog, c, X);
-//        printf("line %f %f, %f\n", X[0], X[1], r);
+    if(sensorlogready) {
+        /* log in transposed table, not ringbuffer */
+        float curlog[6][sensorlogsize];
+        
+        int s, i, j;
+        for(s=0; s<6; s++) {
+            for(j = 0, i = sensorlogpos; i<sensorlogsize; i++, j++)
+                curlog[s][j] = sensorlog[i][s];
+            for(i = 0; i != sensorlogpos; i++, j++)
+                curlog[s][j] = sensorlog[i][s];
 
+            float X[4], r;
+            r = CalcBestLine(curlog[s], sensorlogsize, X);
+            printf("line %d %f %f, %f\n", s, X[0], X[1], r);
 
-    X[0] = 1, X[1] = 10, X[2] = 0, X[3] = 0;
+            X[0] = 1, X[1] = 10, X[2] = 0, X[3] = 0;
 
-        int iters;
-        for(iters = 0; iters < 2; iters++) {
-            r = CalcBestSine(curlog, c, X);
-        }
+            int iters;
+            for(iters = 0; iters < 5; iters++) {
+                r = CalcBestSine(curlog[s], sensorlogsize, X);
+            }
 
-        if(r) {
+            if(r) {
 //            float x = c;
 //            float yd = states[ind] - X[2]*sin(X[3]*x + X[4]);
 //            print_value(yd);
 //            if(fabsf(r) < 1 && X[1] > 3 && X[1] < 8 && fabsf(X[3]) < 10)
-            {
 #if 0
             printf("quadratic sine ");
             print_value(X[0]);
@@ -144,40 +135,46 @@ void yaw_dampen(int ind)
                 print_value(0);
 #endif
 //            printf("\n");
-           }
+            }
         }
-
-#endif
+    }
 }
 
-void config(int op)
+static void config(int op)
 {
-/*
-    const char *in[3] = {"P", "I", "D"};
+    FILE *f = config_open(op, "autopilot");
 
-  int i;
+    const char *in[3] = {"P", "I", "D"};
+    int i;
     for(i=0; i<3; i++)
         config_float_vector(op, f, in[i], pid_gains + i*6, 6);
 
-    // scale factor and polarity of servo configuration,
-    // servo is controlled by an avr which takes +- 1000
-    config_float(op, f, "servo_scale", &servo_scale);
-    config_float(op, f, "min_hardover_period", &min_hardover_period);
-    config_float_vector(op, f, "alignment", alignment, 4);
-*/
+    fclose(f);
 }
 
-struct timeval start;
-float now()
+void read_stdin()
 {
-    struct timeval current;
-    gettimeofday(&current, NULL);
-    return current.tv_sec - start.tv_sec + (current.tv_usec - start.tv_usec)/1e6;
+    /* read from stdin */
+    int print = 0;
+    char buf[1];
+    while((read(STDIN_FILENO, buf, 1)) == 1) {
+        switch(buf[0]) {
+        case 'q': exit(1);
+        case '+': case '=': desired_heading++; break;
+        case '_': case '-': desired_heading--; break;
+        case '0': desired_heading += states[2]; break;
+        case 'a': engauged = !engauged; break;
+        case 'l': imu_level(); break;
+        }
+        print = 1;
+    }
+    if(print)
+        fprintf(stderr, "heading: %.2f %d\n", desired_heading, engauged);
 }
 
 int main()
 {
-    imu_init("~/.rpi_ap/imu");
+    imu_init();
     int servo = servo_open("/dev/ttyUSB0");
 
     /* for keyboard control */
@@ -187,69 +184,49 @@ int main()
     }
     setvbuf(stdin, 0, _IONBF, 0);
 
-    /* record start time */
-    gettimeofday(&start, NULL);
-
     for(;;) {
         float X[6];
         imu_orientation(X);
         imu_rate(X+3);
 
-        int i;
-        for(i=0; i<6; i++)
-            print_value(X[i]);
-        printf("\n");
-        
         // PID Filter
         /* compute position, integral and derivative from all 6 states */
 
         const float hz = 10; /* run about 10 hz */
         for(i=0; i<6; i++) {
-            states[i+6] += X[i] / hz;
-            if(states[i+6] > 1) states[i+6] = 1;
-            if(states[i+6] < -1) states[i+6] = -1;
+            /* integrate with saturation */
+            states[i+INTEGRAL] += X[i] / hz;
+            if(states[i+INTEGRAL] > 1) states[i+INTEGRAL] = 1;
+            if(states[i+INTEGRAL] < -1) states[i+INTEGRAL] = -1;
 
-            states[i+12] = (X[i] - states[i])*hz;
+            /* differentiate */
+            states[i+DERIVATIVE] = (X[i] - states[i])*hz;
 
-            if(i == 2)
-                states[i] = heading_resolve(X[2] - desired_heading);
+            if(i == YAW)
+                states[i] = heading_resolve(X[YAW] - desired_heading);
             else
                 states[i] = X[i];
         }
 
+        /* analyze the states */
+        
+        enum {PORT, STARBOARD, };
+        heel = lp_filter(heel, states[ROLL], .99);
+
         command = pid_command();
 
-        int n = now();
+        int n = imu_runtime();
 
         /* don't command initially because the state is inaccurate */                
         if(n > 5 && engauged)
             servo_write(servo, command);
 
         servo_read();
-
-        /* read from stdin */
-        int print = 0;
-        char buf[1];
-        while((read(STDIN_FILENO, buf, 1)) == 1) {
-            switch(buf[0]) {
-            case 'q': exit(1);
-            case '+': case '=': desired_heading++; break;
-            case '_': case '-': desired_heading--; break;
-            case '0': desired_heading += states[2]; break;
-            case 'a': engauged = !engauged; break;
-            case 'y': yaw_dampening = !yaw_dampening; break;
-            case 'l': imu_level(); break;
-            }
-            print = 1;
-        }
-        if(print)
-            fprintf(stderr, "heading: %.2f %d %d\n", desired_heading, engauged, yaw_dampening);
    
-        fflush(stdout);
+        read_stdin();
     
         /* run at approximately 10 hz */
         struct timespec ts = {0, 1e8};
         nanosleep(&ts, NULL);
     }
 }
-

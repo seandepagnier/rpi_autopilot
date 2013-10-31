@@ -2,7 +2,8 @@ enum {ACCELX, ACCELY, ACCELZ, GYROX, GYROY, GYROZ, MAGX, MAGY, MAGZ, BARO, SENSO
 
 /* called once at start to connect and configure,
    0 on success -1 on failure */
-int imu_init(const char *config_file);
+int imu_init(void);
+float imu_runtime(void);
 
 void imu_read(float s[9]); /* calibrated sensor reading */
 

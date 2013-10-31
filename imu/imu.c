@@ -37,7 +37,7 @@ static float of_bias[SENSOR_COUNT] = {0, 0, 0, -.05, .11, .03, .24, .63, -.5, 0}
 
 char i2c_device[] = "/dev/i2c-1";
 
-float alignment[4]; /* quaternion */
+float alignment[4] = {1, 0, 0, 0}; /* quaternion */
 
 float gyro_bias_lowpass = .995;
 float gyro_scale = 2000;
@@ -45,7 +45,7 @@ float gyro_scale = 2000;
 float desired_heading;
 const int filter_sample_count = 20;
 
-static char *config_file;
+static char *config_name="imu";
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
@@ -163,9 +163,9 @@ static void read_sensors()
 
 void config(int op)
 {
-    FILE *f = fopen(config_file, op == READ ? "r" : "w");
+    FILE *f = config_open(op, config_name);
     if(!f) {
-        fprintf(stderr, "failed to open config: %s\n", config_file);
+        fprintf(stderr, "failed to open config: %s\n", config_name);
         return;
     }
 
@@ -224,12 +224,23 @@ static void compute_initial_orientation()
     q0 = q[0], q1 = q[1], q2 = q[2], q3 = q[3];
 }
 
+struct timeval start;
+float imu_runtime()
+{
+    struct timeval current;
+    gettimeofday(&current, NULL);
+    return current.tv_sec - start.tv_sec + (current.tv_usec - start.tv_usec)/1e6;
+}
+
 static void *sensors_loop(void *v)
 {
     float freq = 100;
     float l = 0, l2 = 0;
+    /* record start time */
+    gettimeofday(&start, NULL);
+
     for(;;) {
-        float n = now();
+        float n = imu_runtime();
         struct timespec ts = {0, (l - n + 1/freq)*1e9};
         nanosleep(&ts, NULL);
         l = n;
@@ -289,18 +300,8 @@ static void *sensors_loop(void *v)
     }
 }
  
-int imu_init(const char *config)
+int imu_init()
 {
-    config_file = malloc(strlen(config+1));
-    strcpy(config_file, config);
-
-    char dir[strlen(config_file)+1];
-    strcpy(dir, config_file);
-    char *d = strrchr(dir, '/');
-    if(d)
-        *d = '\0';
-    mkdir(dir, 755);
-
     /* read configuration */
     read_config();
     atexit(write_config);
@@ -411,5 +412,5 @@ void imu_rate(float a[3])
     r[3] =     0.5f * ( q[0] * g[2] + q[1] * g[1] - q[2] * g[0]);
     quatnormalize(r);
     
-    quaternion_pitch_roll_yaw(r, a+3, a+4, a+5);
+    quaternion_pitch_roll_yaw(r, a+0, a+1, a+2);
 }

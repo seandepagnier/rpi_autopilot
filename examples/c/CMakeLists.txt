@@ -1,12 +1,15 @@
 PROJECT(autopilot)
 SET(PACKAGE_NAME autopilot)
 
-SET(SRCS autopilot.c)
+INCLUDE_DIRECTORIES(../../imu ../../servo ../../misc)
 
-INCLUDE_DIRECTORIES(../../imu ../../servo)
+SET(LIBS rpi_imu rpi_servo rpi_misc)
 
-ADD_EXECUTABLE(${PACKAGE_NAME} ${SRCS})
+SET(AUTOPILOT_SRCS autopilot.c)
+ADD_EXECUTABLE(autopilot ${AUTOPILOT_SRCS})
+TARGET_LINK_LIBRARIES(autopilot ${LIBS})
 
-TARGET_LINK_LIBRARIES(${PACKAGE_NAME}
-  rpi_imu rpi_servo
-  )
+SET(IMUTEST_SRCS imutest.c)
+ADD_EXECUTABLE(imutest ${IMUTEST_SRCS})
+TARGET_LINK_LIBRARIES(imutest ${LIBS})
+
