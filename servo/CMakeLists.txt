@@ -1,0 +1,8 @@
+PROJECT(servo)
+SET(PACKAGE_NAME rpi_servo)
+
+SET(SRC
+  servo.c
+)
+
+ADD_LIBRARY(${PACKAGE_NAME} SHARED ${SRC})

@@ -1,0 +1,24 @@
+librpi_imu
+         configures the inertial sensors via i2c
+         making the data available via library calls.
+         various automatic calibration algorithms as well as sensor fusion
+         (gradient decent) are performed.
+
+        ~/.rpi_autopilot/imu_config
+        configures the imu and stores calibration coefficients for sensors
+        as well as alignment to vessel.
+
+librpi_servo
+        driving servos (position mode) or electric speed controllers (speed mode) with
+        current feedback to detect stalling and stops.
+
+        ~/.rpi_autopilot/servo_config
+
+        Servos can be connected either via usb (arduino) or eventually
+        via spi (with avr as spi slave)
+
+        capabilities are determined via servo protocol, and include:
+
+        number of pwm outputs
+        current/voltage sense
+        etc.. 

@@ -111,6 +111,7 @@ static float CalcBestFitSphere(float (*points)[3], int count, float X[4])
     return vector_length(R, count) / count;
 }
 
+/* initialize measurement map to invalid */
 static float mag_log[72][3];
 void init_mag_calibration()
 {
@@ -180,4 +181,58 @@ int calibrate_mag(float mag[3], float state[4])
         }
     }
     return 0;
+}
+
+float CalcBestLine(float *points, int count, float X[2])
+{
+    float J[count][2];
+    float R[count];
+
+    X[0] = X[1] = 0; /* initial conditions */
+    int i;
+    for(i = 0; i<count; i++) {
+        /*
+        a*x + b - y = 0
+        dy/da = -x
+        dy/db = -1
+        */
+        float x = i, y = points[i];
+
+        J[i][0] = -x;
+        J[i][1] = -1;
+
+        R[i] = X[0]*x + X[1] - y;
+   }
+
+    if(ApplyLeastSquares(X, J, R, 2, count))
+        return 0;
+
+    return vector_length(R, count) / count;
+}
+
+float CalcBestSine(float *points, int count, float X[4])
+{
+    float J[count][3];
+    float R[count];
+
+    int i;
+    for(i = 0; i<count; i++) {
+        
+        /*
+          y = a*sin(b*x+c) + d
+        */
+        float x = i, y = points[i];
+
+        float inner = x/X[1] + X[2];
+        J[i][0] = -sin(inner);
+        J[i][1] = 2*x*X[0]*cos(inner)/(X[1]*X[1]);
+        J[i][2] = -X[0]*cos(inner);
+
+        R[i] = X[0]*sin(inner) - y;
+   }
+
+    if(ApplyLeastSquares(X, J, R, 3, count))
+        return 0;
+    
+    return vector_length(R, count) / count;
 }

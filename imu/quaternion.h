@@ -1,4 +1,4 @@
-/* Copyright (C) 2007 Sean D'Epagnier <sean@depagnier.com>
+/* Copyright (C) 2007, 2009, 2013 Sean D'Epagnier <sean@depagnier.com>
  *
  * This Program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public
@@ -18,18 +18,17 @@
  * http://www.gnu.org/copyleft/gpl.html
  */
 
-#define rad2deg(X) ((X)*180/M_PI)
-#define deg2rad(X) ((X)/180*M_PI)
+void vec2vec2quat(float x[4], float a[3], float b[3]);
+void rotvecquat(float v[3], float q[4]);
+void angvec2quat(float q[4], float angle, float vec[3]);
 
-void rotatevecaroundaxis(float vec[3], float axis[3], float ang);
-void rotateoutmag(float mval[3], float aval[3]);
+void quatmult2(float q1[4], float q2[4]);
+void quatmult1(float q1[4], float q2[4]);
 
-float heading_resolve(float h);
-float heading_positive(float h);
+float quatmagnitude(float q[4]);
+void quatnormalize(float q[4]);
+float quatangle(float q[4]);
+float subquatangle(float v[3]);
+void quaternion_pitch_roll_yaw(float q[4], float *pitch, float *roll, float *yaw);
 
-void print_value(float v);
-
-static inline float lp_filter(float a, float b, float d)
-{
-    return d*a + (1-d)*b;
-}
+void quatconjugate(float q[4], float r[4]);

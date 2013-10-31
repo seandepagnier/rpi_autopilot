@@ -1,4 +1,4 @@
-/* Copyright (C) 2007, 2009, 2013 Sean D'Epagnier <sean@depagnier.com>
+/* Copyright (C) 2013 Sean D'Epagnier <sean@depagnier.com>
  *
  * This Program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public
@@ -18,14 +18,7 @@
  * http://www.gnu.org/copyleft/gpl.html
  */
 
-void vec2vec2quat(float x[4], float a[3], float b[3]);
-void rotvecquat(float v[3], float q[4]);
-void angvec2quat(float q[4], float angle, float vec[3]);
-void MultQuat2(float q1[4], float q2[4]);
-void MultQuat1(float q1[4], float q2[4]);
-
-float quatmagnitude(float q[4]);
-void quatnormalize(float q[4]);
-float quatangle(float q[4]);
-float subquatangle(float v[3]);
-void quaternion_pitch_roll_yaw(float q[4], float *pitch, float *roll, float *yaw);
+void init_mag_calibration();
+int calibrate_mag(float mag[3], float state[4]);
+float CalcBestLine(float *points, int count, float X[2]);
+float CalcBestSine(float *points, int count, float X[4]);

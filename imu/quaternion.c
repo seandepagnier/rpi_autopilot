@@ -32,13 +32,13 @@
    d[0] = res[0], d[1] = res[1], d[2] = res[2], d[3] = res[3]; \
 
 /* multiply quaternions q1 and q2 and put the result in q1 */
-void MultQuat1(float q1[4], float q2[4])
+void quatmult1(float q1[4], float q2[4])
 {
    MULT_QUAT(q1);
 }
 
 /* multiply quaternions q1 and q2 and put the result in q2 */
-void MultQuat2(float q1[4], float q2[4])
+void quatmult2(float q1[4], float q2[4])
 {
    MULT_QUAT(q2)
 }
@@ -65,8 +65,8 @@ void rotvecquat(float v[3], float q[4])
 {
    float w[4] = {0, v[0], v[1], v[2]};
    float r[4] = {q[0], -q[1], -q[2], -q[3]};
-   MultQuat2(q, w);
-   MultQuat1(w, r);
+   quatmult2(q, w);
+   quatmult1(w, r);
    v[0] = w[1], v[1] = w[2], v[2] = w[3];
 }
 
@@ -83,9 +83,11 @@ void vec2vec2quat(float x[4], float a[3], float b[3])
       cases very slightly larger than 1, set to 1 or acos will barf */
    if(fac > 1)
       fac = 1;
+   if(fac < -1)
+       fac = 1;
 
    float ang = acos(fac);
-   angvec2quat(x, ang, n);
+   angvec2quat(x, ang, n);  /* possible to inline here and optimize? */
 }
 
 float quatmagnitude(float q[4])
@@ -121,4 +123,12 @@ void quaternion_pitch_roll_yaw(float q[4], float *pitch, float *roll, float *yaw
     *pitch = rad2deg(asin(2 * (q[0]*q[2] - q[1]*q[3])));
     *roll = rad2deg(atan2(2 * (q[0]*q[1] + q[2]*q[3]), q0_2  - q1_2 - q2_2 + q3_2));
     *yaw = rad2deg(atan2(2 * (q[1]*q[2] + q[0]*q[3]), q0_2 + q1_2 - q2_2 - q3_2));
+}
+
+void quatconjugate(float q[4], float r[4])
+{
+    q[0] = r[0];
+    q[1] = -r[1];
+    q[2] = -r[2];
+    q[3] = -r[3];
 }
