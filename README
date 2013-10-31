@@ -1,3 +1,12 @@
+This simple c library provides support for imu and servo motor control using
+a raspberry pi, but any linux system with inertial sensors on an i2c bus should work.
+
+Possible applications include:
+         1. sailboat autopilot
+         2. automatic compensated directional antenna from moving platform
+         3. solar tracking on moving platform
+         etc...
+
 librpi_imu
          configures the inertial sensors via i2c
          making the data available via library calls.

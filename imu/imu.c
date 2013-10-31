@@ -403,13 +403,13 @@ void imu_rate(float a[3])
     imu_quaternion(q);
 
     /* turn rate in inertial coordinates */
-    float r[4];
-    float g[3] = {of[GYROX], of[GYROY], of[GYROZ]};
+    float r[4], g[3] = {of[GYROX], of[GYROY], of[GYROZ]};
     rotvecquat(g, alignment);
     r[0] = 1 + 0.5f * (-q[1] * g[0] - q[2] * g[1] - q[3] * g[2]);
     r[1] =     0.5f * ( q[0] * g[0] + q[2] * g[2] - q[3] * g[1]);
     r[2] =     0.5f * ( q[0] * g[1] - q[1] * g[2] + q[3] * g[0]);
     r[3] =     0.5f * ( q[0] * g[2] + q[1] * g[1] - q[2] * g[0]);
+
     quatnormalize(r);
     
     quaternion_pitch_roll_yaw(r, a+0, a+1, a+2);
