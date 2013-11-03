@@ -47,7 +47,7 @@ const int filter_sample_count = 20;
 
 static char *config_name="imu";
 
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+#pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void i2c_read(uint8_t addr, int len)
 {

@@ -51,12 +51,25 @@ int servo_open(const char *device)
     system(cmd);
 
     int servo;
-    if((servo = open(device, O_RDWR)) < 0)
+    if((f = fopen(device, "rw")) < 0)
         printf("failed to open '%s' to control servo\n", device);
-    else if(fcntl(servo, F_SETFL, O_NONBLOCK) == -1) {
+    else if(fcntl(fileno(f), F_SETFL, O_NONBLOCK) == -1) {
         printf("failed to set '%s' non blocking\n", device);
         exit(1);
     }
+    setlinebuf(f);
+
+    fprintf(f, "!GETCAP\r\n");
+
+    struct timespec ts = {0, 1e8};
+    nanosleep(&ts, NULL);
+
+    struct servo *servo;
+    servo_read(f, &servo);
+
+    if(!servo)
+        fclose(f);
+
     return servo;
 }
 
@@ -78,11 +91,13 @@ void servo_write(int servo, int command)
     lsc = scaled_command;
 
     FILE *s = fdopen(servo, "w");
-    fprintf(s, "c%d\r\n", (int)(scaled_command));
+    fprintf(s, "!CMD %d\r\n", (int)(scaled_command));
 }
 
 int servo_read(int servo)
 {
+    FILE *f = fdopen(servo, "rw");
+    fgets(
     char buf[10];
     while((read(servo, buf, 1)) == 1) {
         switch(buf[0]) {
@@ -95,10 +110,6 @@ int servo_read(int servo)
             break;
         case 'k': /* accepted command */
             break;
-        case 'P': /* hold button port */
-        case 'p': /* button port */
-        case 'S': /* hold button starboard */
-        case 's': /* button starboard */
             break;
         case 'm': /* monitor reading */
             break;
