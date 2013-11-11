@@ -9,8 +9,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <fcntl.h>
 #include <unistd.h>
+
+#include <time.h>
 
 #include "imu.h"
 
@@ -33,13 +34,6 @@ int main()
 {
     imu_init();
 
-    /* for keyboard control */
-    if(fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK) == -1) {
-        printf("failed to set stdin non blocking\n");
-        exit(1);
-    }
-    setvbuf(stdin, 0, _IONBF, 0);
-
     for(;;) {
         read_stdin();
 
@@ -49,7 +43,7 @@ int main()
 
         int i;
         for(i=0; i<6; i++)
-            print_value(X[i]);
+            printf("%5.2f ", X[i]);
         printf("\n");
 
         struct timespec ts = {0, 1e9/UPDATE_RATE};

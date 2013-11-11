@@ -26,6 +26,8 @@
 #include <math.h>
 #include <string.h>
 
+#include <ncurses.h>
+
 #include "imu.h"
 #include "calibration.h"
 #include "rotate.h"
@@ -140,37 +142,66 @@ static void config(int op)
     fclose(f);
 }
 
-void read_stdin()
+void read_input()
 {
-    /* read from stdin */
-    int print = 0;
-    char buf[1];
-    while((read(STDIN_FILENO, buf, 1)) == 1) {
-        switch(buf[0]) {
+    for(;;)
+        switch(getch()) {
+        case -1: return;
         case 'q': exit(1);
         case '+': case '=': desired_heading++; break;
         case '_': case '-': desired_heading--; break;
-        case '0': desired_heading += states[2]; break;
+        case '0': desired_heading += states[YAW]; break;
         case 'a': engauged = !engauged; break;
         case 'l': imu_level(); break;
         }
-        print = 1;
-    }
-    if(print)
-        fprintf(stderr, "heading: %.2f %d\n", desired_heading, engauged);
+
+    fprintf(stderr, "heading: %.2f %d\n", desired_heading, engauged);
 }
 
-int main()
+void setup_ncurses()
 {
-    imu_init();
-    int servo = servo_open("/dev/ttyUSB0");
+    initscr();
+    raw();
+    nocbreak();
+    nodelay(stdscr, 0);
+    noecho();
 
-    /* for keyboard control */
+    /* for nonblocking control */
     if(fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK) == -1) {
         printf("failed to set stdin non blocking\n");
         exit(1);
     }
     setvbuf(stdin, 0, _IONBF, 0);
+}
+
+void print_valuew(float v)
+{
+    printw("%c%05.2f ", v < 0 ? '-' : '+', fabs(v));
+}
+
+struct servo *servo = NULL;
+
+void cleanup()
+{
+    servo_close(servo);
+}
+
+int main()
+{
+    imu_init();
+    servo = servo_open("/dev/ttyUSB0");
+
+    atexit(cleanup);
+
+    servo_set_mode(servo, 0, "POSITION");
+
+    setup_ncurses();
+    printw("Autopilot ncurses Control Interface\n"
+           "Keys include:\n"
+           "\t+/- - set desired heading\n"
+           "\t0 - desired heading to current heading\n"
+           "\ta - engauged/disengauge autopilot\n"
+           "\tl - level imu\n");
 
     for(;;) {
         float X[6];
@@ -182,7 +213,14 @@ int main()
 
         const float hz = 10; /* run about 10 hz */
         int i;
+        float heading;
         for(i=0; i<6; i++) {
+            if(i == YAW) { /* set yaw to yaw error */
+                heading = X[YAW];
+                states[i] = heading_resolve(heading - desired_heading);
+            } else
+                states[i] = X[i];
+
             /* integrate with saturation */
             states[i+INTEGRAL] += X[i] / hz;
             if(states[i+INTEGRAL] > 1) states[i+INTEGRAL] = 1;
@@ -190,11 +228,6 @@ int main()
 
             /* differentiate */
             states[i+DERIVATIVE] = (X[i] - states[i])*hz;
-
-            if(i == YAW)
-                states[i] = heading_resolve(X[YAW] - desired_heading);
-            else
-                states[i] = X[i];
         }
 
         /* analyze the states */
@@ -208,12 +241,22 @@ int main()
 
         /* don't command initially because the state is inaccurate */                
         if(n > 5 && engauged)
-            servo_write(servo, command);
+            servo_command(servo, 0, command);
 
-        servo_read();
-   
-        read_stdin();
-    
+        read_input();
+        mvprintw(6, 0, "heading:        ");
+        print_valuew(heading);
+        mvprintw(6, 40, "rate:         ");
+        print_valuew(states[YAW_RATE]);
+        mvprintw(7, 0, "desired heading:          ");
+        print_valuew(desired_heading);
+        mvprintw(7, 40, "heading error:        ");
+        print_valuew(states[YAW]);
+
+        const char *status = servo_read_status(servo);
+        if(status)
+            mvprintw(8, 0, "Status: %s   ", status);
+
         /* run at approximately 10 hz */
         struct timespec ts = {0, 1e8};
         nanosleep(&ts, NULL);

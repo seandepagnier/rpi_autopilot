@@ -6,6 +6,7 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <fcntl.h>
 
 #include <stdint.h>
@@ -19,6 +20,7 @@
 #include "vector.h"
 #include "quaternion.h"
 #include "rotate.h"
+#include "calibration.h"
 #include "config.h"
 
 #define BMA180 0x40
@@ -47,7 +49,7 @@ const int filter_sample_count = 20;
 
 static char *config_name="imu";
 
-#pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+//pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void i2c_read(uint8_t addr, int len)
 {
@@ -272,16 +274,20 @@ static void *sensors_loop(void *v)
             for(i=0; i<SENSOR_COUNT; i++)
                 of[i] -= of_bias[i];
 
+            /* on the initial run estimate initial values for orientation */
             static int initial_values = 1;
             if(initial_values) {
                 initial_values = 0;
                 compute_initial_orientation();
             }
+
+            /* perform sensor fusion */
 #if 1
             MadgwickAHRSupdate(of[3], of[4], of[5], of[0], of[1], of[2], of[6], of[7], of[8]);
 #else
             MahonyAHRSupdate(of[3], of[4], of[5], of[0], of[1], of[2], of[6], of[7], of[8]);
 #endif
+            /* calibrate magnetometer biases */
             float magstate[4];
             if(calibrate_mag(of + 6, magstate)) {
                 float a[3];

@@ -8,16 +8,17 @@
 
 struct servo
 {
-    FILE *f;
-    int motor_count, button_count;
-    int mode_count;
-    char **modes;
-};    
+    FILE *file;
+
+    /* servo capabilities */
+    int motor_count;
+    int button_count;
+    int buzzer;   
+};
+
 
 struct servo *servo_open(const char *device);
-
-void servo_write(int servo, int command);
-int servo_setmode(struct servo *servo, int motor, float maxcurrent, const char *mode);
-int servo_cmd(struct servo *servo, int motor, float command);
-int servo_buzz(struct servo *servo, int n);
-int servo_motor(struct servo *servo,
+void servo_close(struct servo *servo);
+const char *servo_read_status(struct servo *servo);
+void servo_set_mode(struct servo *s, int motor, const char *mode);
+void servo_command(struct servo *s, int motor, float command);

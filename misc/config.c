@@ -6,11 +6,15 @@
  * version 3 of the License, or (at your option) any later version.
  */
 
+#define __USE_GNU
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 
-#define __USE_GNU
 #include <unistd.h>
+
+#include <sys/stat.h>
+#include <sys/types.h>
 
 #include <stdint.h>
 #include <string.h>

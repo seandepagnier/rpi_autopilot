@@ -1,4 +1,4 @@
-CFLAGS = -g -Wall -I imu -I servo
+CFLAGS = -g -Wall -I imu -I servo -I misc
 LDFLAGS = -lm -lpthread
 
 OBJS = \
