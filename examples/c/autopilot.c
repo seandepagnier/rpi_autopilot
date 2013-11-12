@@ -155,7 +155,7 @@ void read_input()
         case 'l': imu_level(); break;
         }
 
-    fprintf(stderr, "heading: %.2f %d\n", desired_heading, engauged);
+//    fprintf(stderr, "heading: %.2f %d\n", desired_heading, engauged);
 }
 
 void setup_ncurses()

@@ -1,3 +1,11 @@
+/* Copyright (C) 2013 Sean D'Epagnier <sean@depagnier.com>
+ *
+ * This Program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -45,7 +53,7 @@ float gyro_bias_lowpass = .995;
 float gyro_scale = 2000;
 
 float desired_heading;
-const int filter_sample_count = 20;
+const int filter_sample_count = 5;
 
 static char *config_name="imu";
 
@@ -236,22 +244,24 @@ float imu_runtime()
 
 static void *sensors_loop(void *v)
 {
-    float freq = 100;
+    float freq = 50;
     float l = 0, l2 = 0;
     /* record start time */
     gettimeofday(&start, NULL);
 
     for(;;) {
         float n = imu_runtime();
-        struct timespec ts = {0, (l - n + 1/freq)*1e9};
-        nanosleep(&ts, NULL);
-        l = n;
+
+        float s = l - n + 1.0/freq;
+        if(s<0) {
+            fprintf(stderr, "system too slow to maintain inertial sensors filter\n");
+        } else {
+            struct timespec ts = {0, (s)*1e9};
+            nanosleep(&ts, NULL);
+        }
+        l = imu_runtime();
 
         float p = 1.0f/filter_sample_count;
-        if(n - l2 >= 2*p) {
-            fprintf(stderr, "system too slow to maintain inertial sensors filter\n");
-            l2 = n;
-        } else
         if(n - l2 >= p) {
             l2 +=  p;
 

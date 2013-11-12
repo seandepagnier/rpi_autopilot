@@ -15,28 +15,13 @@
 
 #include "imu.h"
 
-#define UPDATE_RATE 10 /* 10 hz */
-
-void read_stdin()
-{
-    /* read from stdin */
-    int print = 0;
-    char buf[1];
-    while((read(STDIN_FILENO, buf, 1)) == 1) {
-        switch(buf[0]) {
-        case 'q': exit(1);
-        case 'l': imu_level(); break;
-        }
-    }
-}
+#define UPDATE_RATE 5 /* 5 hz */
 
 int main()
 {
     imu_init();
 
     for(;;) {
-        read_stdin();
-
         float X[6];
         imu_orientation(X);
         imu_rate(X+3);
