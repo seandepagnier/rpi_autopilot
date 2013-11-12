@@ -1,0 +1,150 @@
+Cmp-Mod V01 Created by CvPcb (2012-apr-16-27)-stable date = Thu 31 Oct 2013 20:34:14 NZDT
+
+BeginCmp
+TimeStamp = /522D7767;
+Reference = C1;
+ValeurCmp = RPI_CONN;
+IdModule  = pin_array_13x2;
+EndCmp
+
+BeginCmp
+TimeStamp = /5232AE39;
+Reference = D1;
+ValeurCmp = DIODE;
+IdModule  = D5;
+EndCmp
+
+BeginCmp
+TimeStamp = /523B0116;
+Reference = D2;
+ValeurCmp = LED;
+IdModule  = LED-3MM;
+EndCmp
+
+BeginCmp
+TimeStamp = /5232AE5A;
+Reference = F1;
+ValeurCmp = FUSE;
+IdModule  = FUSE5-20;
+EndCmp
+
+BeginCmp
+TimeStamp = /523AD41A;
+Reference = IC1;
+ValeurCmp = ATTINY24A-P;
+IdModule  = DIP-14__300;
+EndCmp
+
+BeginCmp
+TimeStamp = /523AF407;
+Reference = JP1;
+ValeurCmp = JUMPER;
+IdModule  = PIN_ARRAY_2X1;
+EndCmp
+
+BeginCmp
+TimeStamp = /523AF41B;
+Reference = JP2;
+ValeurCmp = JUMPER;
+IdModule  = PIN_ARRAY_2X1;
+EndCmp
+
+BeginCmp
+TimeStamp = /523ACACB;
+Reference = K1;
+ValeurCmp = OUT_1;
+IdModule  = PIN_ARRAY_3X1;
+EndCmp
+
+BeginCmp
+TimeStamp = /523ABC76;
+Reference = K2;
+ValeurCmp = OUT_2;
+IdModule  = PIN_ARRAY_3X1;
+EndCmp
+
+BeginCmp
+TimeStamp = /522D77CB;
+Reference = P1;
+ValeurCmp = PWR_INPUT;
+IdModule  = PIN_ARRAY_2X1_big;
+EndCmp
+
+BeginCmp
+TimeStamp = /52609D88;
+Reference = P3;
+ValeurCmp = BUTTONS;
+IdModule  = PIN_ARRAY_4x1;
+EndCmp
+
+BeginCmp
+TimeStamp = /523AF482;
+Reference = P4;
+ValeurCmp = PWR_1;
+IdModule  = PIN_ARRAY_2X1_big;
+EndCmp
+
+BeginCmp
+TimeStamp = /523AF48D;
+Reference = P5;
+ValeurCmp = PWR_2;
+IdModule  = PIN_ARRAY_2X1_big;
+EndCmp
+
+BeginCmp
+TimeStamp = /523AF81C;
+Reference = P6;
+ValeurCmp = USART;
+IdModule  = PIN_ARRAY_4x1;
+EndCmp
+
+BeginCmp
+TimeStamp = /523AFEA6;
+Reference = R1;
+ValeurCmp = 11k;
+IdModule  = R3;
+EndCmp
+
+BeginCmp
+TimeStamp = /523AFEA1;
+Reference = R2;
+ValeurCmp = 100k;
+IdModule  = R3;
+EndCmp
+
+BeginCmp
+TimeStamp = /523B0183;
+Reference = R3;
+ValeurCmp = 3.3k;
+IdModule  = R3;
+EndCmp
+
+BeginCmp
+TimeStamp = /5232AEA5;
+Reference = SHUNT1;
+ValeurCmp = .001;
+IdModule  = R7;
+EndCmp
+
+BeginCmp
+TimeStamp = /5232AE82;
+Reference = SP1;
+ValeurCmp = SPEAKER;
+IdModule  = PIN_ARRAY_2X1;
+EndCmp
+
+BeginCmp
+TimeStamp = /5260ADB4;
+Reference = U1;
+ValeurCmp = SENSORS;
+IdModule  = PIN_ARRAY_5x1;
+EndCmp
+
+BeginCmp
+TimeStamp = /523ABB0D;
+Reference = U2;
+ValeurCmp = POWER_SUPPLY;
+IdModule  = PIN_ARRAY_2X2;
+EndCmp
+
+EndListe
