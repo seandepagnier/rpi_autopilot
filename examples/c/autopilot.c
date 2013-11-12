@@ -162,7 +162,7 @@ void setup_ncurses()
 {
     initscr();
     raw();
-    nocbreak();
+    cbreak();
     nodelay(stdscr, 0);
     noecho();
 
@@ -171,7 +171,6 @@ void setup_ncurses()
         printf("failed to set stdin non blocking\n");
         exit(1);
     }
-    setvbuf(stdin, 0, _IONBF, 0);
 }
 
 void print_valuew(float v)
@@ -184,6 +183,9 @@ struct servo *servo = NULL;
 void cleanup()
 {
     servo_close(servo);
+    erase();
+    if(isendwin() == 0)
+        endwin();
 }
 
 int main()

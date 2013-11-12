@@ -43,7 +43,8 @@ static void config(int op)
 
 void servo_set_mode(struct servo *s, int motor, const char *mode)
 {
-    fprintf(s->file, "!SETVAR %d MODE %s\n", motor, mode);
+    if(s)
+        fprintf(s->file, "!SETVAR %d MODE %s\n", motor, mode);
 }
 
 void servo_command(struct servo *s, int motor, float command)
@@ -63,7 +64,8 @@ void servo_command(struct servo *s, int motor, float command)
         scaled_command = -max_command + lsc;
     lsc = scaled_command;
 
-    fprintf(s->file, "!SETVAR %d CMD %d\r\n", motor, (int)(scaled_command));
+    if(s)
+        fprintf(s->file, "!SETVAR %d CMD %d\r\n", motor, (int)(scaled_command));
 }
 
 static int cmdcmp(const char *cmd, const char *s, char **endptr)
@@ -86,15 +88,20 @@ struct servo *servo_open(const char *device)
            "-iexten -echo -echoe -echok -echoctl -echoke min 1 time 5");
     system(cmd);
 
+    FILE *file;
+    if(!(file = fopen(device, "rw"))) {
+        printf("failed to open '%s' to control servo\n", device);
+        return NULL;
+    }
+
     struct servo *servo = malloc(sizeof *servo);
     if(!servo)
         return NULL;
 
     servo->motor_count = servo->button_count = servo->buzzer = 0;
-    
-    if((servo->file = fopen(device, "rw")) < 0)
-        printf("failed to open '%s' to control servo\n", device);
-    else if(fcntl(fileno(servo->file), F_SETFL, O_NONBLOCK) == -1) {
+    servo->file = file;
+
+    if(fcntl(fileno(servo->file), F_SETFL, O_NONBLOCK) == -1) {
         printf("failed to set '%s' non blocking\n", device);
         exit(1);
     }
@@ -126,6 +133,9 @@ struct servo *servo_open(const char *device)
 
 void servo_close(struct servo *servo)
 {
+    if(!servo)
+        return;
+
     for(int m=0; m<servo->motor_count; m++)
         servo_set_mode(servo, m, "IDLE");
     fclose(servo->file);
@@ -134,6 +144,9 @@ void servo_close(struct servo *servo)
 
 const char *servo_read_status(struct servo *servo)
 {
+    if(!servo)
+        return NULL;
+
     static char laststatus[128];
     int status = 0;
     char s[128], *e;

@@ -1,0 +1,184 @@
+# EESchema Netlist Version 1.1 created  Thu 31 Oct 2013 20:34:14 NZDT
+(
+ ( /522D7767 pin_array_13x2 C1 RPI_CONN
+  ( 1 +3.3V )
+  ( 2 ? )
+  ( 3 N-000018 )
+  ( 4 +5V )
+  ( 5 N-000019 )
+  ( 6 GND )
+  ( 7 ? )
+  ( 8 N-000021 )
+  ( 9 N-000022 )
+  ( 10 N-000003 )
+  ( 11 N-000023 )
+  ( 12 N-000024 )
+  ( 13 N-000015 )
+  ( 14 N-000038 )
+  ( 15 N-000004 )
+  ( 16 ? )
+  ( 17 N-000041 )
+  ( 18 N-000029 )
+  ( 19 N-000030 )
+  ( 20 GND )
+  ( 21 N-000008 )
+  ( 22 N-000044 )
+  ( 23 N-000037 )
+  ( 24 ? )
+  ( 25 N-000026 )
+  ( 26 ? )
+ )
+ ( /5232AE39 D5 D1 DIODE
+  ( 1 N-000016 )
+  ( 2 N-000036 )
+ )
+ ( /523B0116 LED-3MM D2 LED
+  ( 1 N-000029 )
+  ( 2 N-000002 )
+ )
+ ( /5232AE5A FUSE5-20 F1 FUSE
+  ( 1 N-000036 )
+  ( 2 N-000006 )
+ )
+ ( /523AD41A DIP-14__300 IC1 ATTINY24A-P
+  ( 1 N-000041 )
+  ( 2 ? )
+  ( 3 ? )
+  ( 4 N-000044 )
+  ( 5 N-000045 )
+  ( 6 N-000035 )
+  ( 7 N-000030 )
+  ( 8 N-000008 )
+  ( 9 N-000037 )
+  ( 10 ? )
+  ( 11 N-000040 )
+  ( 12 N-000039 )
+  ( 13 VSS )
+  ( 14 N-000026 )
+ )
+ ( /523AF407 PIN_ARRAY_2X1 JP1 JUMPER
+  ( 1 +5V )
+  ( 2 N-000032 )
+ )
+ ( /523AF41B PIN_ARRAY_2X1 JP2 JUMPER
+  ( 1 +5V )
+  ( 2 N-000034 )
+ )
+ ( /523ACACB PIN_ARRAY_3X1 K1 OUT_1
+  ( 1 N-000035 )
+  ( 2 N-000032 )
+  ( 3 VSS )
+ )
+ ( /523ABC76 PIN_ARRAY_3X1 K2 OUT_2
+  ( 1 N-000045 )
+  ( 2 N-000034 )
+  ( 3 VSS )
+ )
+ ( /522D77CB PIN_ARRAY_2X1_big P1 PWR_INPUT
+  ( 1 N-000039 )
+  ( 2 N-000016 )
+ )
+ ( /52609D88 PIN_ARRAY_4x1 P3 BUTTONS
+  ( 1 GND )
+  ( 2 N-000023 )
+  ( 3 N-000015 )
+  ( 4 N-000004 )
+ )
+ ( /523AF482 PIN_ARRAY_2X1_big P4 PWR_1
+  ( 1 N-000006 )
+  ( 2 VSS )
+ )
+ ( /523AF48D PIN_ARRAY_2X1_big P5 PWR_2
+  ( 1 N-000006 )
+  ( 2 VSS )
+ )
+ ( /523AF81C PIN_ARRAY_4x1 P6 USART
+  ( 1 +3.3V )
+  ( 2 N-000021 )
+  ( 3 N-000003 )
+  ( 4 N-000038 )
+ )
+ ( /523AFEA6 R3 R1 11k
+  ( 1 N-000039 )
+  ( 2 N-000040 )
+ )
+ ( /523AFEA1 R3 R2 100k
+  ( 1 N-000040 )
+  ( 2 N-000006 )
+ )
+ ( /523B0183 R3 R3 3.3k
+  ( 1 GND )
+  ( 2 N-000002 )
+ )
+ ( /5232AEA5 R7 SHUNT1 .001
+  ( 1 VSS )
+  ( 2 N-000039 )
+ )
+ ( /5232AE82 PIN_ARRAY_2X1 SP1 SPEAKER
+  ( 1 N-000038 )
+  ( 2 N-000024 )
+ )
+ ( /5260ADB4 PIN_ARRAY_5x1 U1 SENSORS
+  ( 1 +3.3V )
+  ( 2 ? )
+  ( 3 N-000022 )
+  ( 4 N-000019 )
+  ( 5 N-000018 )
+  ( 6 ? )
+  ( 7 ? )
+  ( 8 ? )
+  ( 9 ? )
+  ( 10 ? )
+ )
+ ( /523ABB0D PIN_ARRAY_2X2 U2 POWER_SUPPLY
+  ( 1 N-000006 )
+  ( 2 N-000039 )
+  ( 3 +5V )
+  ( 4 N-000039 )
+ )
+)
+*
+{ Allowed footprints by component:
+$component D1
+ D?
+ S*
+$endlist
+$component D2
+ LED-3MM
+ LED-5MM
+ LED-10MM
+ LED-0603
+ LED-0805
+ LED-1206
+ LEDV
+$endlist
+$component R1
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component R2
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component R3
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$component SHUNT1
+ R?
+ SM0603
+ SM0805
+ R?-*
+ SM1206
+$endlist
+$endfootprintlist
+}
