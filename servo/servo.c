@@ -71,9 +71,9 @@ void servo_command(struct servo *s, int motor, float command)
 static int cmdcmp(const char *cmd, const char *s, char **endptr)
 {
     int len = strlen(cmd);
-    if(endptr) {
+    if(endptr && len <= strlen(s)) {
         *endptr = (char*)s+len;
-        while(**endptr == ' ') *endptr++;
+        while(**endptr == ' ') (*endptr)++;
     }
     return !strncmp(cmd, s, len);
 }
@@ -147,17 +147,21 @@ const char *servo_read_status(struct servo *servo)
     if(!servo)
         return NULL;
 
-    static char laststatus[128];
-    int status = 0;
-    char s[128], *e;
-    while(fgets(s, sizeof s, servo->file)) {
-        if(cmdcmp("!STATUS", s, &e)) {
-            strcpy(laststatus, e);
-            status = 1;
+    static char laststatus[256] = "";
+    static int laststatuspos = 0;
+    char *e;
+
+    int c;
+    while((c = fgetc(servo->file)) != EOF) {
+        laststatus[laststatuspos++] = c;
+        if(c == '\n') {
+            laststatus[laststatuspos-1] = '\0';
+            laststatuspos = 0;
+            if(cmdcmp("!STATUS", laststatus, &e)) {
+                return e;
+            }
         }
     }
 
-    if(status)
-        return laststatus;
     return NULL;
 }

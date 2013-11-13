@@ -123,7 +123,7 @@ static void read_sensors()
             cof[i]++;
         }
     } else
-        printf("accel miss\n");
+        fprintf(stderr, "accel miss\n");
     
     if(ioctl(file, I2C_SLAVE, ITG3200) < 0) {
         fprintf(stderr, "Failed to aquire bus address\n");
@@ -138,7 +138,7 @@ static void read_sensors()
             cof[3+i]++;
         }
     } else
-        printf("gyro miss\n");
+        fprintf(stderr, "gyro miss\n");
                     
                     
     if(ioctl(file, I2C_SLAVE, HMC5883) < 0) {
@@ -157,7 +157,7 @@ static void read_sensors()
         }
 //            i2c_write_byte(0x09, 0x00);
     } else
-        printf("mag miss\n");
+        fprintf(stderr, "mag miss\n");
 
     i2c_write_byte(0x02, 0x01); /* request conversion */
 

@@ -8,20 +8,31 @@
 
 /* servo driver for arduino.
 
+   basic usage:
+
+   apt-get install arduino-mk
+   make
+   make upload
+
    Control motor controllers via pwm pulses
    for rc brushed and brushless controllers, or directly to a servo.
 
    Prevent stalling by current feedback with shunts on the low side
-   (to allow arduino to sample shunts with adc.  This is optional,
-   for position based servos, but required for speed based control
-   to determine when the rudder stops.
+   (to allow arduino to sample shunts with adc.
 
-   The following hardware capabilities are supported:
+   Current feedback is required for speed controlled servos to determine
+   when there are stops.
 
-   4 motors: pins 8, 9, 10, 11
-   4 motor current shunts: adc0 to low side and
-                        adc1, adc2, adc3, and adc4
-                        to high side
+   Current feedback is recommended for position controlled servos
+   as it allows them to prevent stalling if an obstruction is present.
+
+In all modes current feedback allows:
+  track efficiency over time, monitor power consumption
+
+   The following hardware capabilities are supported (easily extendable)
+
+   2 motors: pins 9, 10
+   2 motor current shunts: adc0 to adc1 and adc2 to adc3
    3 buttons: pins 5, 6, 7
    1 buzzer: pins 12 and 13
 
@@ -29,20 +40,23 @@
    relay control for motor 1 (via pins 2 and 3)
 
    communication: serial (usb via ftdi)
+   These can be tested manually by running minicom
 
    Control commands: (sent from host to arduino via usb)
    !GETCAP
+   !GETVAR <motor#> <variable>
    !SETVAR <motor#> <variable> <value>
    variables:
-     MODE -- values values: IDLE POSITION SPEED
+     MODE -- values: IDLE POSITION SPEED
      CMD  -- command from +-1000
-     MAX_CURRENT -- maximum allowed current before stall is detected
+     MAX_CURRENT -- maximum allowed current (in centiamps) from 0 to 1000
+                    before stall is detected
      MIN_SPEED -- only in speed mode, from 0 to 1000
             use pwm (motor starts and stops) when speed is lower than
             this value to avoid running the motor very slowly and inefficiently.
    !BUZZ <N> - command buzzer
 
-   Controller replies:
+   Controller replies to !GETCAP
    !CAP <#of Motors> <supported modes> <# of buttons>
 
    Controller outputs at approx 10hz:
@@ -81,7 +95,7 @@
 
 #include <util/delay.h>
 
-#define MOTOR_COUNT 4
+#define MOTOR_COUNT 2
 
 const int stopped = 90; // motor is stopped at servo command of 90 degrees
 
@@ -100,6 +114,53 @@ int button3 = 7;
 
 int relayduty = 0, currelayduty = 0;
 const int minrelayduty = 10;
+
+/* return sign of a number so that x = sign(x)*abs(x) */
+int sign(int x) { return (x > 0) ? 1 : (x < 0) ? -1 : 0; }
+
+void relays_forward()
+{
+    digitalWrite(relay_pin1, LOW);
+    digitalWrite(relay_pin0, HIGH);
+}
+
+void relays_backward()
+{
+    digitalWrite(relay_pin0, LOW);
+    digitalWrite(relay_pin1, HIGH);
+}
+
+void relays_stop()
+{
+    digitalWrite(relay_pin0, LOW);
+    digitalWrite(relay_pin1, LOW);
+}
+
+void command_relays(int command)
+{
+    /* command relays */
+    int relayduty=abs(command);
+    if(relayduty < minrelayduty)
+        relayduty = 0;
+    if(relayduty > 100)
+        relayduty = 100;
+
+    /* very low speed PWM for the relays,
+       with period approximately relay period seconds */
+    const int relayperiod = 3;
+    if(currelayduty < relayduty*relayperiod) {
+        if(command > 0)
+            relays_forward();
+        else
+            relays_backward();
+    } else
+        relays_stop();
+          
+    /* increment position in duty cycle */
+    currelayduty++;
+    if(currelayduty >= 100 * relayperiod)
+        currelayduty = 0;
+}
 
 struct Motor
 {
@@ -195,16 +256,16 @@ struct Motor
         /* overcurrent too long, fault */
         if(over_current_rounds >= 24) {
             fault();
-            /* overcurrent, try alternative */
+        /* overcurrent, try alternative */
         } else if(over_current_rounds >= 8) {
             if(mode == Motor::POSITION) {
                 if(command < 0) {
-                    flags &= ~NEG;
+                    flags = NEG;
                     setcommand(command + 100);
                     if(command >= 0)
                         fault();
                 } else {
-                    flags &= ~POS;
+                    flags = POS;
                     setcommand(command - 100);
                     if(command <= 0)
                         fault();
@@ -241,7 +302,7 @@ struct Motor
 //        Serial.println("!FAULT %d\n", m);
     }
 
-    void output_status() {
+    void output_state() {
         switch(mode) {
         case IDLE: Serial.print("IDLE"); break;
         case POSITION: Serial.print("POSITION"); break;
@@ -250,9 +311,6 @@ struct Motor
         }
     }
 } motors[MOTOR_COUNT];
-
-/* return sign of a number so that x = sign(x)*abs(x) */
-int sign(int x) { return (x > 0) ? 1 : (x < 0) ? -1 : 0; }
 
 void delay_us(long us)
 {
@@ -308,50 +366,6 @@ int read_buttons()
      (digitalRead(button3) ? 0 : BUTTON3);
 }
 
-void relays_forward()
-{
-    digitalWrite(relay_pin1, LOW);
-    digitalWrite(relay_pin0, HIGH);
-}
-
-void relays_backward()
-{
-    digitalWrite(relay_pin0, LOW);
-    digitalWrite(relay_pin1, HIGH);
-}
-
-void relays_stop()
-{
-    digitalWrite(relay_pin0, LOW);
-    digitalWrite(relay_pin1, LOW);
-}
-
-void command_relays(int command)
-{
-    /* command relays */
-    int relayduty=abs(command);
-    if(relayduty < minrelayduty)
-        relayduty = 0;
-    if(relayduty > 100)
-        relayduty = 100;
-
-    /* very low speed PWM for the relays,
-       with period approximately relay period seconds */
-    const int relayperiod = 3;
-    if(currelayduty < relayduty*relayperiod) {
-        if(command > 0)
-            relays_forward();
-        else
-            relays_backward();
-    } else
-        relays_stop();
-          
-    /* increment position in duty cycle */
-    currelayduty++;
-    if(currelayduty >= 100 * relayperiod)
-        currelayduty = 0;
-}
-
 void setup() 
 { 
     // set up Serial library at 9600 bps 
@@ -376,18 +390,21 @@ void setup()
 static char* serial_read_line(void)
 {
     static char buffer[32];
-    static int bufpos;
+    static int bufpos = 0;
     while(Serial.available()) {
         char c = Serial.read();
-        if(c == '\n') {
+
+        if(c == '\n' || c == '\r') {
             buffer[bufpos] = '\0';
             bufpos=0;
+
             return buffer;
         }
+
         buffer[bufpos++] = c;
         
         if(bufpos == (sizeof buffer) / (sizeof *buffer)) {
-            Serial.println("o");
+            Serial.println("overflow on input serial buffer");
             bufpos = 0;
         }
     }
@@ -410,37 +427,44 @@ int read_current(int servo)
 
 void output_status()
 {
-    Serial.print("!STATUS ");
+    Serial.print("!STATUS");
 
     /* mode */
     for(int i=0; i<MOTOR_COUNT;i++) {
-        motors[i].output_status();
-        Serial.print(":");
+        Serial.print(" motor=");
+        Serial.print(i);
 
-        /* command */
-        Serial.print(motors[i].command);
-        Serial.print(":");
+        Serial.print(" state=");
+        motors[i].output_state();
 
-        /* current */
-        Serial.print(motors[i].max_measured_current);
-        motors[i].max_measured_current = 0;
-        if(motors[i].over_current_rounds)
-            Serial.print("!");
-        Serial.print(":");
-        
+        if(motors[i].mode != Motor::IDLE) {
+            /* command */
+            Serial.print(" cmd=");
+            Serial.print(motors[i].command);
+            
+            /* current */
+            Serial.print(" curr=");
+            Serial.print(motors[i].max_measured_current);
+        }
+
         /* flags */
-        if(motors[i].flags & Motor::POS)
-            Serial.print("+");
-        if(motors[i].flags & Motor::NEG)
-            Serial.print("-");
-
-        Serial.print(" ");
+        if(motors[i].flags) {
+            Serial.print(" stall=");
+            if(motors[i].flags & Motor::POS)
+                Serial.print("+");
+            if(motors[i].flags & Motor::NEG)
+                Serial.print("-");
+        }
     }
+
+    Serial.print(" buttons=");
     Serial.println(read_buttons());
 }
 
 int cmdcmp(const char *cmd, const char *s, char **endptr)
 {
+    while(*s==' ') s++;
+
     int len = strlen(cmd);
     if(endptr) {
         *endptr = (char*)s+len;
@@ -462,19 +486,20 @@ void loop()
     char *c = serial_read_line(), *d;
     if(c) {
         if(cmdcmp("!GETCAP", c, 0)) {
-          Serial.print("!CAP ");
+          Serial.print("!CAP");
 
-          Serial.print("MOTORS=");
+          Serial.print(" MOTORS=");
           Serial.print(MOTOR_COUNT);
 
-          Serial.print(" ");
-          Serial.print("BUTTONS=");
-          Serial.println(BUTTON_COUNT);
+          Serial.print(" MODES=IDLE,POSITION,SPEED");
 
-          Serial.print(" ");
-          Serial.print("BUZZER");
+          Serial.print(" BUTTONS=");
+          Serial.print(BUTTON_COUNT);
+
+          Serial.println(" BUZZER");
         } else if(cmdcmp("!SETVAR", c, &d)) {
           int m = strtol(d, &c, 10);
+
           if(cmdcmp("MODE", c, &d)) {
               if(cmdcmp("POSITION", d, 0))
                   motors[m].setmode(Motor::POSITION, m);
@@ -490,11 +515,12 @@ void loop()
             int command = strtol(d, NULL, 10);
 
             if(motors[m].servo.attached())
-                if((motors[m].flags & Motor::NEG && command >= motors[m].command) ||
+                if(!motors[m].flags ||
+                   (motors[m].flags & Motor::NEG && command >= motors[m].command) ||
                    (motors[m].flags & Motor::POS && command <= motors[m].command)) {
-                    motors[m].command = command;
-                    motors[m].flags = Motor::BOTH;
-                }
+                       motors[m].command = command;
+                       motors[m].flags = 0;
+                   }
           } else if(cmdcmp("MAX_CURRENT", c, &d)) {
               motors[m].max_current = strtol(d, NULL, 10);
           } else if(cmdcmp("MIN_SPEED", c, &d)) {

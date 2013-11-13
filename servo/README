@@ -1,0 +1,11 @@
+To program the avr from the pi, avrdude must be installed:
+
+to have the ability to program avr directly via spi a special
+avrdude is needed.
+
+apt-get install flex bison autotools automake libusb-1.0-0-dev
+
+then build avrdude
+
+for the arduino version, makefiles are provided to compile
+and upload
